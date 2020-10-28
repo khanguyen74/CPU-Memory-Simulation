@@ -52,7 +52,6 @@ int main(int argc, char* argv[]){
 		else if (pid == 0) // Child, Memory process
 		{
 			
-			int inst; 
 			close(MemToCpu[0]); // Memory doesn't need to read this pipe
 			close(CpuToMem[1]); // Memory doesn't write to this pipe
 
@@ -65,22 +64,24 @@ int main(int argc, char* argv[]){
 		
 			close(CpuToMem[0]); // CPU doesn't read this pipe
 			close(MemToCpu[1]); // CPU doesn't write to this pipe
-			int inst, val;
 			CPU cpu(MemToCpu[0], CpuToMem[1], timer);
 
 			waitpid(-1, NULL, 0);
 		}
 	
-	}catch(exception& e){
+	}catch(const string&  e){
 	
-		cout << e.what() <<"\n";
+		cerr << e <<"\n";
 	}
 	
   	return 0;
 
 }
 
-
+/*
+ *This method return preprocessed instruction for memory to read
+ *
+ * */
 
 vector<string> getInstructionsFromFile(const string& path){
 

@@ -3,7 +3,6 @@
 #include <sstream>
 #include <stdlib.h>
 #include <unistd.h>
-#include <stdexcept>
 
 
 
@@ -14,7 +13,9 @@ Memory::Memory(int readPipe, int writePipe, vector<string> instructions): readPi
 	run();
 }
 
-
+/*
+ * Process instructions, put instructions in memory
+ * */
 void Memory::readInstruction(const vector<string> instructions){
 	int memoryIndex=0;
 	string instruction;
@@ -34,21 +35,25 @@ void Memory::readInstruction(const vector<string> instructions){
 	sendReadySignalToCpu();
 
 }
-
+/**
+ * Memory loop, keep Memory running until receiving ending command from CPU
+ */
 void Memory::run(){
 	char command;
 	do{
 		if (read(readPipe, &command, sizeof(command) ) <=0 ){
-			throw runtime_error("Memory cannot read from pipe");
+			throw "Memory cannot read from pipe";
 		}
 
 		executeCommand(command);	
 	}while(isNotTerminated(command));
-	printf("Ending memory process\n");
 
 }
 
 
+/*
+ * Memory either writes value to memory or retreive value at given address and send to CPU
+ * */
 void Memory::executeCommand(const char command){
 	if (isWriteCommand(command)){
 		int val, address;

@@ -14,7 +14,6 @@ CPU::CPU(int readPipe, int writePipe, int timer): readPipe(readPipe), writePipe(
 	counter = timer;
 	isKernelMode = false;
 	waitForMemory();
-	printf("Memory ready, start\n");
 	run();
 	sendEndCommand();
 }
@@ -25,6 +24,9 @@ int CPU::getPC(){
 }
 
 
+/**
+ * CPU loop
+ */
 void CPU::run(){
 	// loop until meets terminate instruction
 	do{
@@ -40,14 +42,20 @@ void CPU::run(){
 	
 }
 
+/**
+ *This method halts CPU, waiting for first signal from Memory, which is supposed to be 'r' stands for ready
+ *
+ */
+
 void CPU::waitForMemory(){
 	char signal;
 
 	if (read(readPipe, &signal, sizeof(char)) <=0 ){
 		throw runtime_error("Memory cannot read from pipe");
 	}
+	// check if signal sent from memory is ready signal
 	if (signal != 'r'){
-		throw runtime_error("First signal receive from memory supposed to be ready signal");
+		throw "Cannot receive ready signal from memory";
 	}
 
 
@@ -59,7 +67,10 @@ int CPU::fetchInstruction(){
 
 
 }
-
+/*
+ * send read command to Memory, send address and then reads the value
+ *
+ * */
 int CPU::readMemory(const int address){
 	checkMemoryViolation(address);
 	char command = 'R';
@@ -70,6 +81,9 @@ int CPU::readMemory(const int address){
 	return value;
 }
 
+/*
+ * Check if user program tries to read system memory stack
+ * */
 
 void CPU::checkMemoryViolation(const int address){
 
@@ -78,7 +92,8 @@ void CPU::checkMemoryViolation(const int address){
 		ss << address;
 		sendEndCommand();
 		string message = "Memory violation: accessing system address " + ss.str() + " in user mode";
-		throw runtime_error(message);
+		throw message;
+
 	}
 }
 /*
@@ -86,6 +101,7 @@ void CPU::checkMemoryViolation(const int address){
  *
  * */
 void CPU::writeMemory(const int address, const int value){
+	checkMemoryViolation(address);
 	char command = 'W';
 	write(writePipe, &command, sizeof(char));
 	write(writePipe, &address, sizeof(int));
@@ -133,6 +149,7 @@ void CPU::executeInstruction(){
 		case 8: // get a random number from 1 to 100 into AC
 			srand(time(0));
 			AC = rand() % 100 + 1;
+			AC = 5;
 			break;
 		case 9: // put port, if port = 1, write ac as int, port = 2, write ac as char
 			port = fetchInstruction();
@@ -140,7 +157,7 @@ void CPU::executeInstruction(){
 				printf("%d", AC);
 			}else if(port == 2){
 				printf("%c", AC);
-			}else throw runtime_error("Invalid port is given");
+			}else throw "Invalid port is given for put operation";
 			break;
 		case 10: // add value in X to AC
 			AC += X;
@@ -219,33 +236,40 @@ void CPU::executeInstruction(){
 			break;
 
 		case 29: // Perform system call
+			isKernelMode = true;
 			saveAllRegisters();
 			PC = SYSTEM_CALL_ADDRESS;	// set PC to start of system call routine address
-			isKernelMode = true;
 			break;
 
 		case 30: // return from system call
 			restoreAllRegisters();
-			counter = timer;
+			counter = timer; // reset counter
 			isKernelMode = false;
 			break;
 		case 50: 
 	
-			printf("Ending CPU\n");
 			sendEndCommand();
 			break;
 		default:
 			printf("Unknown command %d\n", IR);
+			sendEndCommand();
 			break;
 	}
 }
 
+/*
+ * Send ending signal to Memory
+ * */
 void CPU::sendEndCommand(){
 	char command = 'E';
 	write(writePipe, &command, sizeof(char));
 
 }
 
+
+/*
+ * If timer reaches 0, change to kernel mode and perform the service routine
+ * */
 void  CPU::checkTimerInterrupt(){
 	if (counter==0 && !isKernelMode){
 		isKernelMode = true;
@@ -255,28 +279,22 @@ void  CPU::checkTimerInterrupt(){
 
 }
 
-
+/*
+ *Save PC and SP
+ * */
 void CPU::saveAllRegisters(){
 	int temp = SP;	// temporarily holds SP
 	SP = SYSTEM_STACK;
 	writeMemory(--SP, temp); // save SP first
 	writeMemory(--SP, PC);
-	writeMemory(--SP, AC);
-	writeMemory(--SP, X);
-	writeMemory(--SP, Y);
-	//printf("Register saved : SP:%d PC:%d AC:%d X:%d Y: %d\n", temp, PC, AC, X, Y);
 }
 
 /**
- * This method restores all system registers from system stack, and reset timer
+ * This method restores all system registers from system stack
  *
  *
  */
 void CPU:: restoreAllRegisters(){
-	Y = readMemory(SP++);
-	X = readMemory(SP++);
-	AC = readMemory(SP++);
 	PC = readMemory(SP++);
 	SP = readMemory(SP++);
-	//printf("Register restored: SP:%d PC:%d AC:%d X:%d Y: %d\n", SP, PC, AC, X, Y);
 }

@@ -1,0 +1,79 @@
+// this program prints first 15 fibonacci numbers, starts at 0,1,....
+1 	// load 12
+12
+14 	// copyToX
+1 	// load
+3
+10 	// AddX 12 + 3 = 15
+14	// copyToX
+23 	// call addr
+10
+50 	// terminate
+26	// Decrement X (print first 2 numbers)
+26 	// Decrement X
+15	// copyFromX
+7	// store AC at address 200
+200
+1 	// load 0
+0
+27	 push
+29	// print AC in sys call
+1	// load 1
+1
+27	// push
+29	// print AC
+
+// loop 
+28	// Pop  
+16	// CopyToY
+28	// Pop
+11	// AddY
+14	// CopyToX
+29	// Print AC
+23	// call decrement_counter function
+42
+2	// load counter at 200
+200
+21	// jump to return if AC equal 0
+41
+17	// copyFromY
+27	// push
+15	// copyFromX
+27	// push 
+20	// jump to begining of the loop
+23
+24	// return to main
+
+ // function decrement_counter
+27	// push AC
+15	// copyFromX
+27	// push X
+2	// load counter at address 200
+200
+14	// copyToX
+26	//Decrement X
+15	// copyFromX
+7	// store deremented value back to address 200
+200
+28	// pop, restore X
+14	// CopyToX
+28	// pop, restore AC
+24	//return (exit function)
+
+
+
+.1500	// system call, prints AC as integer
+27	// push
+9	// output AC as int 
+1
+1	// load newline value and print
+10
+9
+2
+28	// pop
+30	// return from sys call
+
+
+
+.1000	// timer interrupt does nothing
+30
